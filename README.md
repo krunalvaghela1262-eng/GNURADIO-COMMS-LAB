@@ -5,30 +5,37 @@
 <p align="center">
   <img src="https://img.shields.io/badge/IIT%20Bombay-EE340%20Communications%20Lab-1f5fbf" alt="EE340">
   <img src="https://img.shields.io/badge/GNU%20Radio-3.10-d32f2f" alt="GNU Radio 3.10">
-  <img src="https://img.shields.io/badge/flowgraphs-26-7c3aed" alt="26 flowgraphs">
-  <img src="https://img.shields.io/badge/modulation-FM%20%7C%20BPSK%20%7C%20QPSK%20%7C%208--PSK-0e7490" alt="modulation">
+  <img src="https://img.shields.io/badge/flowgraphs-26-111111" alt="26 flowgraphs">
+  <img src="https://img.shields.io/badge/modulation-FM%20%7C%20BPSK%20%7C%20QPSK%20%7C%208--PSK-b91c1c" alt="modulation">
   <img src="https://img.shields.io/badge/text%20links-0%20bit%20errors-22c55e" alt="0 bit errors">
 </p>
 
-> **TL;DR.** My **26 GNU Radio flowgraphs** from IIT Bombay's communications lab (EE340), taking a signal from a single sine wave to a complete digital radio link. The labs cover:
-> - FM modulation, and how non-linear amplifiers distort signals
-> - pulse shaping, matched filtering, then BPSK, QPSK and 8-PSK
-> - a multipath channel and the equaliser that undoes it
+> **TL;DR.** My **26 GNU Radio flowgraphs** from IIT Bombay's communications lab (EE340). They take a signal from a single sine wave to a complete digital radio link:
+> - FM, and what non-linear amplifiers do to signals
+> - pulse shaping, matched filtering, BPSK, QPSK and 8-PSK
+> - a multipath channel with the equaliser that undoes it
 > - carrier synchronisation with a Costas loop
+> - a wavelet time–frequency analysis of an FM link
 >
-> **Everything plotted here comes from actually running these flowgraphs** in GNU Radio 3.10 (headless, see [how](#how-this-repo-was-made)). The headline result: a paragraph of text goes through each digital link and comes back with **zero bit errors**, including through a two-path echo channel once the equaliser is switched on.
+> **Every plot here comes from actually running the flowgraphs in GNU Radio 3.10**. A paragraph of text goes through each digital link and comes back with **zero bit errors**.
 
 ---
 
 ## Text in → radio → text out
 
-Each digital lab sends the same 1,421-character paragraph through the flowgraph: bits → symbols → pulse shaping → 100 kHz carrier → noise → receiver → bits. The received file is then compared with the original, bit by bit:
+Each digital lab sends the same 1,421-character paragraph through its flowgraph: bits → symbols → pulse shaping → 100 kHz carrier → noise → receiver → bits. The received file is then compared with the original, bit by bit:
 
-<p align="center">
-  <img src="docs/figures/text_links.png" alt="Bit error rate for each lab's link: zero for BPSK, QPSK and 8-PSK; 52% for 8-PSK through multipath without equaliser; zero again with the equaliser" width="90%">
-</p>
+| Lab | Link | Bits per symbol | Bit errors (of 11,368) |
+|---|---|:---:|:---:|
+| 5 | BPSK, root-raised-cosine pulse shaping, 100 kHz carrier | 1 | **0** ✅ |
+| 6 | BPSK + Gaussian noise | 1 | **0** ✅ |
+| 6 | BPSK with a matched filter at the receiver | 1 | **0** ✅ |
+| 6 | QPSK, I/Q modulation and demodulation | 2 | **0** ✅ |
+| 7 | 8-PSK, clean channel | 3 | **0** ✅ |
+| 7 | 8-PSK through a two-path (echo) channel, **no equaliser** | 3 | 5,963 (52 %) ❌ |
+| 7 | 8-PSK through the same channel, **with a 4-tap equaliser** | 3 | **0** ✅ |
 
-The one red bar is the point of Lab 7. An echo arriving one symbol late smears every symbol into the next (inter-symbol interference), so the text comes out as garbage. A 4-tap equaliser that inverts the channel brings it back perfectly:
+The ❌ row is the point of Lab 7. An echo arriving one symbol late smears every symbol into the next (inter-symbol interference), and the text comes out as garbage. The equaliser inverts the channel and brings it back perfectly:
 
 <p align="center">
   <img src="docs/figures/multipath_text.png" alt="Received text without equaliser (unreadable) and with equaliser (correct)" width="90%">
@@ -38,27 +45,21 @@ The one red bar is the point of Lab 7. An echo arriving one symbol late smears e
 
 ## The labs
 
-| Lab | Topic | What I built | Result shown below |
-|---|---|---|---|
-| 1 | GNU Radio basics | 5-band audio equaliser, notch filter, VCO tone generator, mixing two audio tracks | flowgraph |
-| 3 | FM | FM modulator (Δf = 75 kHz) and a quadrature demodulator, with noise and pre-/de-emphasis | spectrum + recovered message |
-| 4 | Non-linearity | diode (exp) and amplifier (tanh) models driven by a band-limited signal | harmonics appearing |
-| 5 | BPSK + pulse shaping | root-raised-cosine (RRC) pulse shaping, 100 kHz carrier, full text link | 0 bit errors |
-| 6 | Matched filter + QPSK | RRC matched filter, QPSK modulator / I-Q demodulator / 2×4 decoder | eye diagrams, 0 bit errors |
-| 7 | Multipath + equalisation | 8-PSK, channel H(z) = 1 + 0.5z⁻¹, 4-tap feed-forward equaliser, adaptive equaliser | constellation cleaning up |
-| 8 | Carrier synchronisation | Costas loop for QPSK and M-PSK | loop locking animation |
-
-### Lab 1 · Getting started
-
-A 5-band graphic equaliser: five band-pass filters, each with its own gain slider, summed back together.
-
-<p align="center"><img src="docs/flowgraphs/lab1_gnuradio_basics__equalizer.png" alt="Lab 1 audio equaliser flowgraph" width="80%"></p>
+| Lab | Topic | What I built |
+|---|---|---|
+| 1 | GNU Radio basics | 5-band audio equaliser, notch filter, VCO tone generator, mixing two audio tracks |
+| 3 | FM | FM modulator (Δf = 75 kHz) and quadrature demodulator, with noise and pre-/de-emphasis |
+| 4 | Non-linearity | diode (exp) and amplifier (tanh) models driven by a band-limited signal |
+| 5 | BPSK + pulse shaping | root-raised-cosine (RRC) pulse shaping, carrier up-conversion, complete text link |
+| 6 | Matched filter + QPSK | RRC matched filter, QPSK modulator, I/Q demodulator, 2×4 decoder |
+| 7 | Multipath + equalisation | 8-PSK, channel H(z) = 1 + 0.5z⁻¹, 4-tap feed-forward equaliser, adaptive (CMA) equaliser |
+| 8 | Carrier synchronisation | Costas loops for QPSK and M-PSK |
+| extra | Time–frequency analysis | FM link carrying a chirp, tone bursts and a click; spectrogram vs wavelet scalogram |
 
 ### Lab 3 · FM modulation and demodulation
 
 Two tones (1.1 kHz and 11 kHz) frequency-modulate a 100 kHz carrier with 75 kHz deviation, the same deviation as broadcast FM. The receiver is a **quadrature demodulator**: multiply the signal by a one-sample-delayed conjugate of itself and take the angle. That gives the phase change per sample, which is the instantaneous frequency, which is the message.
 
-<p align="center"><img src="docs/flowgraphs/lab3_fm__task2_fm_demodulation.png" alt="Lab 3 FM modulator and quadrature demodulator flowgraph" width="85%"></p>
 <p align="center"><img src="docs/figures/fm.png" alt="FM spectrum and demodulated message overlaid on the original" width="100%"></p>
 
 ### Lab 4 · Non-linearity
@@ -73,49 +74,51 @@ Sharp rectangular pulses waste bandwidth, so every symbol is shaped with a **roo
 
 <p align="center"><img src="docs/figures/rolloff.png" alt="Spectrum of the RRC-shaped signal for four roll-off values" width="85%"></p>
 
-The receiver uses the **same RRC filter again (the matched filter)**. The two together form a raised-cosine pulse with no inter-symbol interference at the sampling instants, and this choice maximises the SNR. The eye diagram shows it: with no noise the eye is wide open, and noise gradually closes it.
+The receiver applies **the same RRC filter again: the matched filter**. The two together form a raised-cosine pulse with no inter-symbol interference at the sampling instants, and this choice maximises the SNR. The eye diagram shows how well the receiver can separate symbols. It is wide open with no noise and closes as the noise grows. Each step below is a separate GNU Radio run of my QPSK flowgraph:
 
-<p align="center"><img src="docs/figures/eye_vs_noise.png" alt="Eye diagrams at five noise levels" width="100%"></p>
-
-The complete QPSK link: text → 2-bit chunks → QPSK symbols → RRC → I/Q up-conversion to 100 kHz → noise → I/Q down-conversion → matched filter → threshold → 2×4 decoder → text.
-
-<p align="center"><img src="docs/flowgraphs/lab6_qpsk_matched_filter__task4_qpsk_decoder.png" alt="Lab 6 QPSK transmitter, channel and receiver flowgraph" width="100%"></p>
+<p align="center"><img src="docs/figures/eye_diagram.gif" alt="Animated eye diagram closing as noise amplitude increases from 0 to 1" width="80%"></p>
 
 ### Lab 7 · Multipath and equalisation
 
-The channel adds an echo of half the strength one symbol later: **H(z) = 1 + 0.5z⁻¹**. Its inverse is an infinite series, 1/H(z) = 1 − 0.5z⁻¹ + 0.25z⁻² − 0.125z⁻³ + …, and the equaliser keeps the first four taps. The animation steps the taps from 0 to that exact inverse. Each frame is a separate GNU Radio run of my flowgraph, and the points come from its receiver's constellation sink:
+The channel adds an echo of half the strength one symbol later: **H(z) = 1 + 0.5z⁻¹**. Its inverse is an infinite series, 1/H(z) = 1 − 0.5z⁻¹ + 0.25z⁻² − 0.125z⁻³ + …, and the equaliser keeps the first four taps. The animation steps the taps from 0 to that exact inverse. Each frame is a separate GNU Radio run, and the points come from the receiver's constellation sink:
 
 <p align="center"><img src="docs/figures/equalizer.gif" alt="Animation: 8-PSK constellation turning from a smeared cloud into 8 clean points as the equaliser taps approach the channel inverse" width="80%"></p>
 
-<details>
-<summary><b>The full Lab 7 flowgraph (71 blocks, 85 connections)</b></summary>
-<p align="center"><img src="docs/flowgraphs/lab7_multipath_equalization__task1_e.png" alt="Lab 7 task 1e flowgraph" width="100%"></p>
-</details>
-
 ### Lab 8 · Carrier synchronisation (Costas loop)
 
-A receiver's oscillator is never exactly at the transmitter's frequency, so the constellation **spins**. A **Costas loop** measures the phase error from the symbols themselves, filters it, and steers its own oscillator until the spin stops. My lab flowgraphs, with a Viterbi–Viterbi M-PSK variant on the right:
+A receiver's oscillator is never exactly at the transmitter's frequency, so the constellation **spins**. A **Costas loop** measures the phase error from the symbols themselves, filters it, and steers its own oscillator until the spin stops. My lab flowgraphs, with an M-PSK version on the right:
 
 <p align="center"><img src="labs/lab8_carrier_sync/costas_loop_qpsk.jpg" alt="Costas loop for QPSK flowgraph" width="49%"> <img src="labs/lab8_carrier_sync/costas_loop_mpsk_viterbi.jpg" alt="Costas loop with Viterbi for M-PSK flowgraph" width="49%"></p>
 
-The same idea, run in GNU Radio ([`tools/costas_lock_demo.py`](tools/costas_lock_demo.py)): its frequency estimate converges to the true offset and the ring collapses to four points.
+The same idea, run in GNU Radio ([`tools/costas_lock_demo.py`](tools/costas_lock_demo.py)): the loop's frequency estimate converges to the true offset and the spinning ring collapses to four points.
 
 <p align="center"><img src="docs/figures/costas_lock.gif" alt="Animation: Costas loop acquiring lock, constellation spinning then settling" width="100%"></p>
+
+### Extra · Wavelet time–frequency analysis of an FM link
+
+*An additional exercise I wrote in the style of the lab sheets ([problem statement and solution](labs/extra_wavelet_time_frequency)).*
+
+A message that changes over time goes through a GNU Radio FM link. It contains a chirp sweeping from 300 Hz to 6 kHz, two overlapping tone bursts and a 0.3 ms click. The received message is then viewed in time and frequency at once.
+
+A **spectrogram** uses one window length for every frequency, so the click smears across about 20 ms. A **Morlet wavelet scalogram** uses short wavelets at high frequency and long ones at low frequency. The click therefore becomes a sharp vertical line, while the 1 kHz burst stays a thin band.
+
+<p align="center"><img src="docs/figures/wavelet_scalogram.gif" alt="Animation: wavelet scalogram of the received FM message being revealed in time" width="100%"></p>
+
+<details>
+<summary><b>Spectrogram vs scalogram, side by side</b></summary>
+<p align="center"><img src="docs/figures/wavelet_vs_stft.png" alt="Received message, its spectrogram and its wavelet scalogram" width="100%"></p>
+</details>
 
 ---
 
 ## How this repo was made
 
-These are GUI flowgraphs: every result was a live scope window during the lab. To get real numbers and pictures out of them:
+These are GUI flowgraphs: during the lab every result was a live scope window. To get real data out of them, [`tools/run_headless.py`](tools/run_headless.py) rewrites each `.grc` file before compiling it with GNU Radio's `grcc`:
+- every scope (time, frequency, constellation, eye) becomes a recorder;
+- every slider becomes a fixed value that can be overridden with `--set` (that is how the sweeps were made);
+- file paths point at [`data/`](data).
 
-- [`tools/run_headless.py`](tools/run_headless.py) rewrites a `.grc` file before compiling it with GNU Radio's `grcc`:
-  - every scope (time, frequency, constellation, eye) becomes a vector sink that records what it would have displayed;
-  - every slider becomes a fixed value, which can be overridden with `--set` (that is how the sweeps were made);
-  - file paths point at [`data/`](data).
-
-  The flowgraph then runs headless and everything is saved.
-- [`tools/grc_render.py`](tools/grc_render.py) draws each `.grc` as the block diagrams shown above, using the block positions, parameters and wires stored in the file.
-- [`docs/make_figures.py`](docs/make_figures.py) turns the recorded data into the figures and animations.
+[`docs/make_figures.py`](docs/make_figures.py) turns the recordings into the figures and animations.
 
 ```bash
 # GNU Radio 3.10 environment (e.g. radioconda, or: micromamba create -n gr -c conda-forge gnuradio=3.10)
@@ -123,6 +126,7 @@ python tools/run_headless.py labs/lab6_qpsk_matched_filter/task4_qpsk_decoder.gr
 python tools/run_headless.py labs/lab7_multipath_equalization/task1_e.grc runs/sweeps/eq_1.npz --inputs data \
        --set b1=-0.5 --set b2=0.25 --set b3=-0.125 --set b4=0.0625
 python tools/costas_lock_demo.py runs/costas.npz
+python labs/extra_wavelet_time_frequency/fm_wavelet_flowgraph.py runs/fm_wavelet.npz
 COMMS_RUNS=runs python docs/make_figures.py
 ```
 
@@ -131,10 +135,10 @@ COMMS_RUNS=runs python docs/make_figures.py
 ## Repository
 
 ```
-labs/          my flowgraphs (.grc) and the Python GNU Radio generated from them, one folder per lab
-data/          inputs: the text that is transmitted (Original_Text.txt) and the Lab 4 test signal (Input.bin)
-tools/         headless runner, flowgraph renderer, Costas loop demo
-docs/          figures, animations, the script that makes them, and a block diagram of every flowgraph (docs/flowgraphs/)
+labs/          my flowgraphs (.grc) and the Python GNU Radio generated from them, one folder per lab, plus the extra wavelet task
+data/          inputs: the transmitted text (Original_Text.txt) and the Lab 4 test signal (Input.bin)
+tools/         headless runner and the Costas loop demo
+docs/          figures, animations and the script that makes them
 ```
 
 <details open>
@@ -149,18 +153,15 @@ docs/          figures, animations, the script that makes them, and a block diag
 | **`labs/lab6_qpsk_matched_filter/`** | `q1` BPSK with noise, `task1` eye diagram, `task2` matched filter, `task3` QPSK, `task4` QPSK with constellation decoder; `received_text_*.txt` decoded during the lab |
 | **`labs/lab7_multipath_equalization/`** | `task1a` 8-PSK, `task1b` + multipath, `task1c`/`task1d` + manual equaliser with error monitor, `task1_e` complete text link, `task2`/`lab7_task2` adaptive (CMA, constant-modulus) linear equaliser |
 | **`labs/lab8_carrier_sync/`** | screenshots of the Costas loop flowgraphs for QPSK and M-PSK |
+| **`labs/extra_wavelet_time_frequency/`** | problem statement, GNU Radio FM flowgraph, wavelet / spectrogram analysis |
 | `tools/run_headless.py` | runs any of the flowgraphs without a GUI and records every scope |
-| `tools/grc_render.py` | `.grc` → block-diagram PNG |
 | `tools/costas_lock_demo.py` | Costas loop locking a QPSK signal with a frequency offset |
 | `docs/make_figures.py` | all README figures and animations, from the recorded runs |
 
 </details>
 
-> [!NOTE]
-> The department's lab manuals and exam papers are not included; the table above summarises each lab's tasks. The Lab 1 audio clips are not included either (some are commercial songs). Lab 2 (AM) and the AM hardware lab are not here because their files were not kept.
-
 ---
 
 ## Acknowledgements
 
-EE340 Communications Lab, Wadhwani Electronics Lab, Department of Electrical Engineering, IIT Bombay (Autumn 2025). Built with [GNU Radio](https://www.gnuradio.org/).
+EE340 Communications Lab, Wadhwani Electronics Lab, Department of Electrical Engineering, IIT Bombay (Autumn 2025). Built with [GNU Radio](https://www.gnuradio.org/) and [PyWavelets](https://pywavelets.readthedocs.io).
