@@ -58,7 +58,7 @@ def main(npz, out):
     style(axs[2])
     axs[2].pcolormesh(t[::8], fw / 1e3, P[:, ::8], cmap="inferno", vmin=-50, vmax=0, shading="auto")
     axs[2].set_yscale("log"); axs[2].set_ylim(0.15, 12)
-    axs[2].set_title("scalogram (Morlet wavelet): sharp in time at high frequency, sharp in frequency at low",
+    axs[2].set_title("scalogram (Morlet wavelet): resolution adapts to frequency, so the click is a sharp line",
                      color=FG, loc="left", fontsize=11.5)
     for ax in axs[1:]:
         ax.set_ylabel("frequency (kHz)", color=MUTED)

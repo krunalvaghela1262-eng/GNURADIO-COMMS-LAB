@@ -19,7 +19,7 @@ A Fourier spectrum tells you **which** frequencies are present, but not **when**
 
    Answer:
    - Which representation shows the click as a sharp vertical line, and why?
-   - Which shows the 1 kHz burst as a thin horizontal band?
+   - Which one resolves the steady 1 kHz tone more finely in frequency?
    - How does the wavelet's time and frequency resolution change with frequency?
 
 ## Solution
@@ -27,4 +27,13 @@ A Fourier spectrum tells you **which** frequencies are present, but not **when**
 - [`fm_wavelet_flowgraph.py`](fm_wavelet_flowgraph.py) is the GNU Radio flowgraph for steps 1–4. It saves the transmitted and received message to `.npz`.
 - [`wavelet_analysis.py`](wavelet_analysis.py) computes the spectrogram and the Morlet scalogram (PyWavelets) and draws the figure and animation shown in the main README.
 
-**Answer.** The spectrogram uses one window length for every frequency, so it has to trade off: a long window blurs the click across about 20 ms, and a short window would smear the tones in frequency. The wavelet transform uses **short wavelets at high frequency and long ones at low frequency**. So the click appears as a sharp vertical line, the 1 kHz burst as a thin band, and the chirp as a clean rising curve: constant *relative* resolution, Δf / f ≈ constant.
+**Answer.** The spectrogram uses one 1024-sample (21 ms) window for every frequency.
+- It gives the finest frequency resolution for the steady 1 kHz and 8 kHz tones.
+- It blurs the click across the whole 21 ms window.
+
+The wavelet transform uses **short wavelets at high frequency and long ones at low frequency**, so its resolution is constant in *relative* terms (Δf / f ≈ constant):
+- the click appears as a sharp vertical line, sharpest at high frequencies;
+- the chirp, whose frequency keeps changing, is a clean rising curve;
+- steady tones look wider in frequency than in the spectrogram.
+
+Neither view is better everywhere. The wavelet is the right tool for transients and fast-changing signals, the STFT for steady tones.

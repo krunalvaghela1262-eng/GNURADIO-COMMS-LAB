@@ -17,29 +17,7 @@
 > - carrier synchronisation with a Costas loop
 > - a wavelet time–frequency analysis of an FM link
 >
-> **Every plot here comes from actually running the flowgraphs in GNU Radio 3.10**. A paragraph of text goes through each digital link and comes back with **zero bit errors**.
-
----
-
-## Text in → radio → text out
-
-Each digital lab sends the same 1,421-character paragraph through its flowgraph: bits → symbols → pulse shaping → 100 kHz carrier → noise → receiver → bits. The received file is then compared with the original, bit by bit:
-
-| Lab | Link | Bits per symbol | Bit errors (of 11,368) |
-|---|---|:---:|:---:|
-| 5 | BPSK, root-raised-cosine pulse shaping, 100 kHz carrier | 1 | **0** ✅ |
-| 6 | BPSK + Gaussian noise | 1 | **0** ✅ |
-| 6 | BPSK with a matched filter at the receiver | 1 | **0** ✅ |
-| 6 | QPSK, I/Q modulation and demodulation | 2 | **0** ✅ |
-| 7 | 8-PSK, clean channel | 3 | **0** ✅ |
-| 7 | 8-PSK through a two-path (echo) channel, **no equaliser** | 3 | 5,963 (52 %) ❌ |
-| 7 | 8-PSK through the same channel, **with a 4-tap equaliser** | 3 | **0** ✅ |
-
-The ❌ row is the point of Lab 7. An echo arriving one symbol late smears every symbol into the next (inter-symbol interference), and the text comes out as garbage. The equaliser inverts the channel and brings it back perfectly:
-
-<p align="center">
-  <img src="docs/figures/multipath_text.png" alt="Received text without equaliser (unreadable) and with equaliser (correct)" width="90%">
-</p>
+> **Every plot and animation here comes from actually running the flowgraphs in GNU Radio 3.10.** A paragraph of text sent through each digital link (BPSK, QPSK, 8-PSK) comes back with **zero bit errors**.
 
 ---
 
@@ -64,29 +42,33 @@ Two tones (1.1 kHz and 11 kHz) frequency-modulate a 100 kHz carrier with 75 kHz 
 
 ### Lab 4 · Non-linearity
 
-Real amplifiers saturate. Modelling one as tanh() and driving it harder makes the 340–520 kHz signal leak into its **3rd and 5th harmonic bands**, about 50 dB higher than with gentle drive. That is why a transmitter's power amplifier needs filtering after it.
+Real amplifiers saturate. Here the amplifier is modelled as tanh() and its drive slider is turned up step by step, with one GNU Radio run per step. As the signal starts to reach the flat part of the curve (left), the 340–520 kHz signal leaks into its **3rd and 5th harmonic bands** (right). The 3rd-harmonic band rises by about 50 dB. That is why a transmitter's power amplifier needs filtering after it, or must be backed off from saturation.
 
-<p align="center"><img src="docs/figures/nonlinearity.png" alt="Spectrum of a tanh amplifier output at three drive levels showing harmonic bands" width="100%"></p>
+<p align="center"><img src="docs/figures/nonlinearity.gif" alt="Animation: tanh amplifier transfer curve and output spectrum as the drive increases, harmonic bands growing" width="100%"></p>
 
 ### Labs 5 & 6 · Pulse shaping, matched filtering, QPSK
 
-Sharp rectangular pulses waste bandwidth, so every symbol is shaped with a **root-raised-cosine (RRC)** pulse. The roll-off α sets the trade-off: the bandwidth is (1 + α) × symbol rate / 2.
+Sharp rectangular pulses waste bandwidth, so every symbol is shaped with a **root-raised-cosine (RRC)** pulse. The roll-off α is the trade-off:
+- a small α gives a narrow spectrum, bandwidth = (1 + α) × symbol rate / 2, but a long pulse with large ripples, so timing errors hurt more;
+- a large α gives a short, well-behaved pulse but more bandwidth.
 
-<p align="center"><img src="docs/figures/rolloff.png" alt="Spectrum of the RRC-shaped signal for four roll-off values" width="85%"></p>
+The animation slides α from 0.05 to 1, with one GNU Radio run per value:
 
-The receiver applies **the same RRC filter again: the matched filter**. The two together form a raised-cosine pulse with no inter-symbol interference at the sampling instants, and this choice maximises the SNR. The eye diagram shows how well the receiver can separate symbols. It is wide open with no noise and closes as the noise grows. Each step below is a separate GNU Radio run of my QPSK flowgraph:
+<p align="center"><img src="docs/figures/rolloff.gif" alt="Animation: raised-cosine pulse and measured spectrum as the roll-off alpha slides from 0.05 to 1" width="100%"></p>
+
+The receiver applies **the same RRC filter again: the matched filter**. The two together form a raised-cosine pulse with no inter-symbol interference at the sampling instants, and this choice maximises the SNR. The eye diagram shows how well the receiver can separate symbols. It is wide open with no noise and closes as the noise grows. Each step below is a separate GNU Radio run of my QPSK flowgraph. At the default noise level, the BPSK and QPSK links deliver the whole text file with zero bit errors.
 
 <p align="center"><img src="docs/figures/eye_diagram.gif" alt="Animated eye diagram closing as noise amplitude increases from 0 to 1" width="80%"></p>
 
 ### Lab 7 · Multipath and equalisation
 
-The channel adds an echo of half the strength one symbol later: **H(z) = 1 + 0.5z⁻¹**. Its inverse is an infinite series, 1/H(z) = 1 − 0.5z⁻¹ + 0.25z⁻² − 0.125z⁻³ + …, and the equaliser keeps the first four taps. The animation steps the taps from 0 to that exact inverse. Each frame is a separate GNU Radio run, and the points come from the receiver's constellation sink:
+The channel adds an echo of half the strength one symbol later: **H(z) = 1 + 0.5z⁻¹**. Its inverse is an infinite series, 1/H(z) = 1 − 0.5z⁻¹ + 0.25z⁻² − 0.125z⁻³ + …, and the equaliser keeps the first four taps. The animation steps the taps from 0 to that exact inverse. Each frame is a separate GNU Radio run, and the points come from the receiver's constellation sink. Without the equaliser, 52% of the received text's bits are wrong. With the four taps, the text comes back with zero bit errors.
 
 <p align="center"><img src="docs/figures/equalizer.gif" alt="Animation: 8-PSK constellation turning from a smeared cloud into 8 clean points as the equaliser taps approach the channel inverse" width="80%"></p>
 
 ### Lab 8 · Carrier synchronisation (Costas loop)
 
-A receiver's oscillator is never exactly at the transmitter's frequency, so the constellation **spins**. A **Costas loop** measures the phase error from the symbols themselves, filters it, and steers its own oscillator until the spin stops. My lab flowgraphs, with an M-PSK version on the right:
+A receiver's oscillator is never exactly at the transmitter's frequency, so the constellation **spins**. A **Costas loop** measures the phase error from the symbols themselves, filters it, and steers its own oscillator until the spin stops. The Lab 8 flowgraphs in GNU Radio Companion: the QPSK Costas loop (left) and an M-PSK version that estimates the phase with the Viterbi–Viterbi M-th-power method (right):
 
 <p align="center"><img src="labs/lab8_carrier_sync/costas_loop_qpsk.jpg" alt="Costas loop for QPSK flowgraph" width="49%"> <img src="labs/lab8_carrier_sync/costas_loop_mpsk_viterbi.jpg" alt="Costas loop with Viterbi for M-PSK flowgraph" width="49%"></p>
 
@@ -96,11 +78,9 @@ The same idea, run in GNU Radio ([`tools/costas_lock_demo.py`](tools/costas_lock
 
 ### Extra · Wavelet time–frequency analysis of an FM link
 
-*An additional exercise I wrote in the style of the lab sheets ([problem statement and solution](labs/extra_wavelet_time_frequency)).*
+A message that changes over time goes through a GNU Radio FM link: a chirp sweeping from 300 Hz to 6 kHz, two overlapping tone bursts and a 0.3 ms click. The received message is then viewed in time and frequency at once ([problem statement and solution](labs/extra_wavelet_time_frequency)).
 
-A message that changes over time goes through a GNU Radio FM link. It contains a chirp sweeping from 300 Hz to 6 kHz, two overlapping tone bursts and a 0.3 ms click. The received message is then viewed in time and frequency at once.
-
-A **spectrogram** uses one window length for every frequency, so the click smears across about 20 ms. A **Morlet wavelet scalogram** uses short wavelets at high frequency and long ones at low frequency. The click therefore becomes a sharp vertical line, while the 1 kHz burst stays a thin band.
+A **spectrogram** uses one 21 ms window at every frequency. That suits steady tones, but the click smears across the whole window. A **Morlet wavelet scalogram** uses short wavelets at high frequency and long ones at low frequency, so its resolution adapts to the signal: the click becomes a sharp vertical line and the chirp a clean rising curve.
 
 <p align="center"><img src="docs/figures/wavelet_scalogram.gif" alt="Animation: wavelet scalogram of the received FM message being revealed in time" width="100%"></p>
 
