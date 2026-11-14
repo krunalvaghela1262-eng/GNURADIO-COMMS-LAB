@@ -1,0 +1,247 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+#
+# SPDX-License-Identifier: GPL-3.0
+#
+# GNU Radio Python Flow Graph
+# Title: Not titled yet
+# Author: krunal
+# GNU Radio version: 3.10.7.0
+
+from packaging.version import Version as StrictVersion
+from PyQt5 import Qt
+from gnuradio import qtgui
+from gnuradio import analog
+from gnuradio import blocks
+import pmt
+from gnuradio import digital
+from gnuradio import filter
+from gnuradio.filter import firdes
+from gnuradio import gr
+from gnuradio.fft import window
+import sys
+import signal
+from PyQt5 import Qt
+from argparse import ArgumentParser
+from gnuradio.eng_arg import eng_float, intx
+from gnuradio import eng_notation
+from gnuradio.qtgui import Range, RangeWidget
+from PyQt5 import QtCore
+
+
+
+class task1b(gr.top_block, Qt.QWidget):
+
+    def __init__(self):
+        gr.top_block.__init__(self, "Not titled yet", catch_exceptions=True)
+        Qt.QWidget.__init__(self)
+        self.setWindowTitle("Not titled yet")
+        qtgui.util.check_set_qss()
+        try:
+            self.setWindowIcon(Qt.QIcon.fromTheme('gnuradio-grc'))
+        except BaseException as exc:
+            print(f"Qt GUI: Could not set Icon: {str(exc)}", file=sys.stderr)
+        self.top_scroll_layout = Qt.QVBoxLayout()
+        self.setLayout(self.top_scroll_layout)
+        self.top_scroll = Qt.QScrollArea()
+        self.top_scroll.setFrameStyle(Qt.QFrame.NoFrame)
+        self.top_scroll_layout.addWidget(self.top_scroll)
+        self.top_scroll.setWidgetResizable(True)
+        self.top_widget = Qt.QWidget()
+        self.top_scroll.setWidget(self.top_widget)
+        self.top_layout = Qt.QVBoxLayout(self.top_widget)
+        self.top_grid_layout = Qt.QGridLayout()
+        self.top_layout.addLayout(self.top_grid_layout)
+
+        self.settings = Qt.QSettings("GNU Radio", "task1b")
+
+        try:
+            if StrictVersion(Qt.qVersion()) < StrictVersion("5.0.0"):
+                self.restoreGeometry(self.settings.value("geometry").toByteArray())
+            else:
+                self.restoreGeometry(self.settings.value("geometry"))
+        except BaseException as exc:
+            print(f"Qt GUI: Could not restore geometry: {str(exc)}", file=sys.stderr)
+
+        ##################################################
+        # Variables
+        ##################################################
+        self.variable_constellation_0 = variable_constellation_0 = digital.constellation_calcdist([1+0j, 0.7071+0.7071j, 0+1j, -0.7071+0.7071j, -1+0j, -0.7071-0.7071j, 0-1j, 0.7071-0.7071j], [0, 1, 2, 3, 4, 5, 6, 7],
+        4, 1, digital.constellation.AMPLITUDE_NORMALIZATION).base()
+        self.samp_rate = samp_rate = 100000
+        self.noise_amp = noise_amp = 0
+        self.delay = delay = 8
+        self.alpha = alpha = 0.35
+
+        ##################################################
+        # Blocks
+        ##################################################
+
+        self._noise_amp_range = Range(0, 1, 0.05, 0, 200)
+        self._noise_amp_win = RangeWidget(self._noise_amp_range, self.set_noise_amp, "'noise_amp'", "counter_slider", float, QtCore.Qt.Horizontal)
+        self.top_layout.addWidget(self._noise_amp_win)
+        self._delay_range = Range(0, 30, 1, 8, 200)
+        self._delay_win = RangeWidget(self._delay_range, self.set_delay, "'delay'", "counter_slider", float, QtCore.Qt.Horizontal)
+        self.top_layout.addWidget(self._delay_win)
+        self._alpha_range = Range(0.01, 1, 0.01, 0.35, 200)
+        self._alpha_win = RangeWidget(self._alpha_range, self.set_alpha, "'alpha'", "counter_slider", float, QtCore.Qt.Horizontal)
+        self.top_layout.addWidget(self._alpha_win)
+        self.root_raised_cosine_filter_0_0 = filter.interp_fir_filter_ccf(
+            1,
+            firdes.root_raised_cosine(
+                3,
+                80000,
+                10000,
+                alpha,
+                88))
+        self.root_raised_cosine_filter_0 = filter.interp_fir_filter_ccf(
+            1,
+            firdes.root_raised_cosine(
+                3,
+                80000,
+                10000,
+                alpha,
+                88))
+        self.rational_resampler_xxx_1 = filter.rational_resampler_ccc(
+                interpolation=1,
+                decimation=5,
+                taps=[],
+                fractional_bw=0)
+        self.rational_resampler_xxx_0_0_0 = filter.rational_resampler_ccc(
+                interpolation=5,
+                decimation=1,
+                taps=[],
+                fractional_bw=0)
+        self.interp_fir_filter_xxx_0 = filter.interp_fir_filter_ccc(8, [1])
+        self.interp_fir_filter_xxx_0.declare_sample_delay(0)
+        self.iir_filter_xxx_0 = filter.iir_filter_ccd([1,0.5], [1], True)
+        self.fir_filter_xxx_0_1 = filter.fir_filter_ccc(8, [1])
+        self.fir_filter_xxx_0_1.declare_sample_delay(0)
+        self.digital_constellation_decoder_cb_0 = digital.constellation_decoder_cb(variable_constellation_0)
+        self.digital_chunks_to_symbols_xx_0 = digital.chunks_to_symbols_bc([1+0j, 0.7071+0.7071j, 0+1j, -0.7071+0.7071j, -1+0j, -0.7071-0.7071j, 0-1j, 0.7071-0.7071j], 1)
+        self.blocks_unpack_k_bits_bb_0_0_0 = blocks.unpack_k_bits_bb(3)
+        self.blocks_unpack_k_bits_bb_0 = blocks.unpack_k_bits_bb(8)
+        self.blocks_throttle2_1_0 = blocks.throttle( gr.sizeof_char*1, 10000, True, 0 if "auto" == "auto" else max( int(float(0.1) * 10000) if "auto" == "time" else int(0.1), 1) )
+        self.blocks_skiphead_0_0_2 = blocks.skiphead(gr.sizeof_char*1, 16)
+        self.blocks_pack_k_bits_bb_0_0_1 = blocks.pack_k_bits_bb(8)
+        self.blocks_pack_k_bits_bb_0_0_0 = blocks.pack_k_bits_bb(3)
+        self.blocks_multiply_xx_0_0 = blocks.multiply_vcc(1)
+        self.blocks_multiply_xx_0 = blocks.multiply_vcc(1)
+        self.blocks_file_source_0 = blocks.file_source(gr.sizeof_char*1, 'Original_Text.txt', False, 0, 0)
+        self.blocks_file_source_0.set_begin_tag(pmt.PMT_NIL)
+        self.blocks_file_sink_0_0 = blocks.file_sink(gr.sizeof_char*1, '02.txt', False)
+        self.blocks_file_sink_0_0.set_unbuffered(True)
+        self.blocks_delay_0 = blocks.delay(gr.sizeof_gr_complex*1, delay)
+        self.blocks_conjugate_cc_0 = blocks.conjugate_cc()
+        self.blocks_add_xx_0 = blocks.add_vcc(1)
+        self.analog_sig_source_x_0_0 = analog.sig_source_c(400000, analog.GR_COS_WAVE, 100000, 1, 0, 0)
+        self.analog_sig_source_x_0 = analog.sig_source_c(400000, analog.GR_COS_WAVE, 100000, 1, 0, 0)
+        self.analog_noise_source_x_0 = analog.noise_source_c(analog.GR_GAUSSIAN, noise_amp, 0)
+
+
+        ##################################################
+        # Connections
+        ##################################################
+        self.connect((self.analog_noise_source_x_0, 0), (self.blocks_add_xx_0, 0))
+        self.connect((self.analog_sig_source_x_0, 0), (self.blocks_multiply_xx_0, 1))
+        self.connect((self.analog_sig_source_x_0_0, 0), (self.blocks_conjugate_cc_0, 0))
+        self.connect((self.blocks_add_xx_0, 0), (self.blocks_multiply_xx_0_0, 1))
+        self.connect((self.blocks_conjugate_cc_0, 0), (self.blocks_multiply_xx_0_0, 0))
+        self.connect((self.blocks_delay_0, 0), (self.fir_filter_xxx_0_1, 0))
+        self.connect((self.blocks_file_source_0, 0), (self.blocks_unpack_k_bits_bb_0, 0))
+        self.connect((self.blocks_multiply_xx_0, 0), (self.iir_filter_xxx_0, 0))
+        self.connect((self.blocks_multiply_xx_0_0, 0), (self.rational_resampler_xxx_1, 0))
+        self.connect((self.blocks_pack_k_bits_bb_0_0_0, 0), (self.digital_chunks_to_symbols_xx_0, 0))
+        self.connect((self.blocks_pack_k_bits_bb_0_0_1, 0), (self.blocks_throttle2_1_0, 0))
+        self.connect((self.blocks_skiphead_0_0_2, 0), (self.blocks_pack_k_bits_bb_0_0_1, 0))
+        self.connect((self.blocks_throttle2_1_0, 0), (self.blocks_file_sink_0_0, 0))
+        self.connect((self.blocks_unpack_k_bits_bb_0, 0), (self.blocks_pack_k_bits_bb_0_0_0, 0))
+        self.connect((self.blocks_unpack_k_bits_bb_0_0_0, 0), (self.blocks_skiphead_0_0_2, 0))
+        self.connect((self.digital_chunks_to_symbols_xx_0, 0), (self.interp_fir_filter_xxx_0, 0))
+        self.connect((self.digital_constellation_decoder_cb_0, 0), (self.blocks_unpack_k_bits_bb_0_0_0, 0))
+        self.connect((self.fir_filter_xxx_0_1, 0), (self.digital_constellation_decoder_cb_0, 0))
+        self.connect((self.iir_filter_xxx_0, 0), (self.blocks_add_xx_0, 1))
+        self.connect((self.interp_fir_filter_xxx_0, 0), (self.root_raised_cosine_filter_0, 0))
+        self.connect((self.rational_resampler_xxx_0_0_0, 0), (self.blocks_multiply_xx_0, 0))
+        self.connect((self.rational_resampler_xxx_1, 0), (self.root_raised_cosine_filter_0_0, 0))
+        self.connect((self.root_raised_cosine_filter_0, 0), (self.rational_resampler_xxx_0_0_0, 0))
+        self.connect((self.root_raised_cosine_filter_0_0, 0), (self.blocks_delay_0, 0))
+
+
+    def closeEvent(self, event):
+        self.settings = Qt.QSettings("GNU Radio", "task1b")
+        self.settings.setValue("geometry", self.saveGeometry())
+        self.stop()
+        self.wait()
+
+        event.accept()
+
+    def get_variable_constellation_0(self):
+        return self.variable_constellation_0
+
+    def set_variable_constellation_0(self, variable_constellation_0):
+        self.variable_constellation_0 = variable_constellation_0
+        self.digital_constellation_decoder_cb_0.set_constellation(self.variable_constellation_0)
+
+    def get_samp_rate(self):
+        return self.samp_rate
+
+    def set_samp_rate(self, samp_rate):
+        self.samp_rate = samp_rate
+
+    def get_noise_amp(self):
+        return self.noise_amp
+
+    def set_noise_amp(self, noise_amp):
+        self.noise_amp = noise_amp
+        self.analog_noise_source_x_0.set_amplitude(self.noise_amp)
+
+    def get_delay(self):
+        return self.delay
+
+    def set_delay(self, delay):
+        self.delay = delay
+        self.blocks_delay_0.set_dly(int(self.delay))
+
+    def get_alpha(self):
+        return self.alpha
+
+    def set_alpha(self, alpha):
+        self.alpha = alpha
+        self.root_raised_cosine_filter_0.set_taps(firdes.root_raised_cosine(3, 80000, 10000, self.alpha, 88))
+        self.root_raised_cosine_filter_0_0.set_taps(firdes.root_raised_cosine(3, 80000, 10000, self.alpha, 88))
+
+
+
+
+def main(top_block_cls=task1b, options=None):
+
+    if StrictVersion("4.5.0") <= StrictVersion(Qt.qVersion()) < StrictVersion("5.0.0"):
+        style = gr.prefs().get_string('qtgui', 'style', 'raster')
+        Qt.QApplication.setGraphicsSystem(style)
+    qapp = Qt.QApplication(sys.argv)
+
+    tb = top_block_cls()
+
+    tb.start()
+
+    tb.show()
+
+    def sig_handler(sig=None, frame=None):
+        tb.stop()
+        tb.wait()
+
+        Qt.QApplication.quit()
+
+    signal.signal(signal.SIGINT, sig_handler)
+    signal.signal(signal.SIGTERM, sig_handler)
+
+    timer = Qt.QTimer()
+    timer.start(500)
+    timer.timeout.connect(lambda: None)
+
+    qapp.exec_()
+
+if __name__ == '__main__':
+    main()
